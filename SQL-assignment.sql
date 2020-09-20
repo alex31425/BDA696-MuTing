@@ -1,0 +1,70 @@
+use baseball;
+
+# create a table that has a column called DATEFIDD whcih calculate
+# the differecnes day between a specific date and local_date in game table
+drop table if exists batting_avg_wDATEDIFF ;
+CREATE table batting_avg_wDATEDIFF (
+batter int unsigned not null,
+hit int unsigned not null,
+atbat int unsigned not null,
+local_date datetime not null,
+diff_day int not null
+) engine=InnoDB default charset latin1;
+
+# Insert data into batting_avg_wDATEDIFF table
+insert into batting_avg_wDATEDIFF (
+batter,hit,atbat,local_date,diff_day)
+select bc.batter,bc.hit,bc.atBat,g.local_date,DATEDIFF('2012-07-05 00:00:00' ,g.local_date) 
+from game g
+join batter_counts bc on
+	bc.game_id = g.game_id;
+
+
+# select data from batting_avg_wDATEDIFF table that DATEDIFF is fewer than 100 days	
+select batter as batter_100 ,SUM(hit),SUM(atbat),SUM(hit)/SUM(atbat) as AVG from batting_avg_wDATEDIFF 
+where diff_day <= 100
+group by batter
+order by AVG desc;
+
+# create a table to store the above result
+drop table if exists batting_avg_100;
+CREATE table batting_avg_100 (
+batter int unsigned not null,
+hit int unsigned not null,
+atbat int unsigned not null,
+AVG float unsigned
+) engine=InnoDB default charset latin1;
+
+# store data in the batting_avg_100 table
+insert into batting_avg_100 (batter,hit,atbat,AVG)
+select batter ,SUM(hit),SUM(atbat),IF (SUM(hit)=0,NULL,SUM(hit))/SUM(atbat) as AVG from batting_avg_wDATEDIFF 
+where diff_day <= 100
+group by batter
+order by AVG desc;
+
+select * from batting_avg_100 order by batter ;
+DELETE from batting_avg_100 ;
+
+
+# Every player's alltime battering average
+select batter, sum(Hit) as TH,sum(atBat) as TB, SUM(Hit)/SUM(atBat) as AVG from batter_counts group by batter;
+
+# create a table to store above data
+drop table if exists batting_avg_alltime;
+CREATE table batting_avg_alltime (
+batter int unsigned not null,
+hit int unsigned null,
+atbat int unsigned not null,
+AVG float unsigned
+) engine=InnoDB default charset latin1;
+
+select * from batting_avg_alltime ;
+
+# insert data into batting_avg_alltime table
+insert into batting_avg_alltime (batter,hit,atbat,AVG)
+select batter, SUM(Hit),sum(atBat), ROUND((IF (SUM(Hit)=0,NULL,SUM(Hit))/SUM(atBat)),3) from batter_counts group by batter;
+
+select * from batting_avg_alltime ;
+DELETE from batting_avg_alltime ;
+
+
