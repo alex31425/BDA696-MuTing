@@ -20,11 +20,13 @@ join batter_counts bc on
 	bc.game_id = g.game_id;
 
 
+
 # select data from batting_avg_wDATEDIFF table that DATEDIFF is fewer than 100 days	
 select batter as batter_100 ,SUM(hit),SUM(atbat),SUM(hit)/SUM(atbat) as AVG from batting_avg_wDATEDIFF 
 where diff_day <= 100
 group by batter
 order by AVG desc;
+
 
 # create a table to store the above result
 drop table if exists batting_avg_100;
@@ -37,13 +39,47 @@ AVG float unsigned
 
 # store data in the batting_avg_100 table
 insert into batting_avg_100 (batter,hit,atbat,AVG)
-select batter ,SUM(hit),SUM(atbat),IF (SUM(hit)=0,NULL,SUM(hit))/SUM(atbat) as AVG from batting_avg_wDATEDIFF 
+select batter ,SUM(hit),SUM(atbat),
+CASE when SUM(hit)<>0
+then round(SUM(hit)/SUM(atbat),3)
+else 0 end as AVG
+from batting_avg_wDATEDIFF 
 where diff_day <= 100
 group by batter
 order by AVG desc;
 
 select * from batting_avg_100 order by batter ;
 DELETE from batting_avg_100 ;
+
+# select data from batting_avg_wDATEDIFF table that DATEDIFF is 365 days (1 year)
+
+select batter as batter_365 ,SUM(hit),SUM(atbat),SUM(hit)/SUM(atbat) as AVG from batting_avg_wDATEDIFF 
+where diff_day <= 365
+group by batter
+order by AVG desc;
+
+# create a table to store the above result
+drop table if exists batting_avg_365;
+CREATE table batting_avg_365 (
+batter int unsigned not null,
+hit int unsigned not null,
+atbat int unsigned not null,
+AVG float unsigned
+) engine=InnoDB default charset latin1;
+
+# store data in the batting_avg_100 table
+insert into batting_avg_365 (batter,hit,atbat,AVG)
+select batter ,SUM(hit),SUM(atbat),
+CASE when SUM(hit)<>0
+then round(SUM(hit)/SUM(atbat),3)
+else 0 end as AVG
+from batting_avg_wDATEDIFF 
+where diff_day <= 365
+group by batter
+order by AVG desc;
+
+select batter,hit,atbat,ROUND(AVG,3) as AVG from batting_avg_365;
+DELETE from batting_avg_365;
 
 
 # Every player's alltime battering average
@@ -62,9 +98,10 @@ select * from batting_avg_alltime ;
 
 # insert data into batting_avg_alltime table
 insert into batting_avg_alltime (batter,hit,atbat,AVG)
-select batter, SUM(Hit),sum(atBat), ROUND((IF (SUM(Hit)=0,NULL,SUM(Hit))/SUM(atBat)),3) from batter_counts group by batter;
+select batter, SUM(Hit),sum(atBat),
+case when SUM(Hit)<>0 then round(SUM(Hit)/SUM(atBat),3)
+else 0 end as AVG
+from batter_counts group by batter;
 
-select * from batting_avg_alltime ;
+select batter,hit,atbat,round(AVG,3) as AVG from batting_avg_alltime ;
 DELETE from batting_avg_alltime ;
-
-
