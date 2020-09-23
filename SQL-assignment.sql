@@ -11,6 +11,7 @@ local_date datetime not null,
 diff_day int not null
 ) engine=InnoDB default charset latin1;
 
+
 # Insert data into batting_avg_wDATEDIFF table
 insert into batting_avg_wDATEDIFF (
 batter,hit,atbat,local_date,diff_day)
@@ -19,11 +20,12 @@ from game g
 join batter_counts bc on
 	bc.game_id = g.game_id;
 
-
+select * from batting_avg_wDATEDIFF bawd ;
+DELETE from batting_avg_wDATEDIFF ;
 
 # select data from batting_avg_wDATEDIFF table that DATEDIFF is fewer than 100 days	
 select batter as batter_100 ,SUM(hit),SUM(atbat),SUM(hit)/SUM(atbat) as AVG from batting_avg_wDATEDIFF 
-where diff_day <= 100
+where diff_day between 0 and 100
 group by batter
 order by AVG desc;
 
@@ -44,7 +46,7 @@ CASE when SUM(hit)<>0
 then round(SUM(hit)/SUM(atbat),3)
 else 0 end as AVG
 from batting_avg_wDATEDIFF 
-where diff_day <= 100
+where diff_day between 0 and 100
 group by batter
 order by AVG desc;
 
@@ -54,7 +56,7 @@ DELETE from batting_avg_100 ;
 # select data from batting_avg_wDATEDIFF table that DATEDIFF is 365 days (1 year)
 
 select batter as batter_365 ,SUM(hit),SUM(atbat),SUM(hit)/SUM(atbat) as AVG from batting_avg_wDATEDIFF 
-where diff_day <= 365
+where diff_day between 0 and 365
 group by batter
 order by AVG desc;
 
@@ -67,18 +69,18 @@ atbat int unsigned not null,
 AVG float unsigned
 ) engine=InnoDB default charset latin1;
 
-# store data in the batting_avg_100 table
+# store data in the batting_avg_365 table
 insert into batting_avg_365 (batter,hit,atbat,AVG)
 select batter ,SUM(hit),SUM(atbat),
 CASE when SUM(hit)<>0
 then round(SUM(hit)/SUM(atbat),3)
 else 0 end as AVG
 from batting_avg_wDATEDIFF 
-where diff_day <= 365
+where diff_day between 0 and 365
 group by batter
 order by AVG desc;
 
-select batter,hit,atbat,ROUND(AVG,3) as AVG from batting_avg_365;
+select batter,hit,atbat,ROUND(AVG,3) as AVG from batting_avg_365 order by batter ;
 DELETE from batting_avg_365;
 
 
@@ -105,3 +107,5 @@ from batter_counts group by batter;
 
 select batter,hit,atbat,round(AVG,3) as AVG from batting_avg_alltime ;
 DELETE from batting_avg_alltime ;
+
+
