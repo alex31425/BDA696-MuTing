@@ -32,9 +32,9 @@ select a.batter ,a.local_date as Beg_date ,b.local_date as End_date, b.hit as HI
 from batting_avg_wDATEDIFF a inner join batting_avg_wDATEDIFF b on a.batter = b.batter 
 where b.local_date < @Enddate order by a.local_date, DATEDIFF(b.local_date ,a.local_date) ;
 
-
-select batter,Beg_date,SUM(HIT),SUM(ATBAT),ROUND(SUM(HIT)/SUM(ATBAT),3) as AVG from rolling where date_diff between 0 AND 100 group by Beg_date,batter order by batter,Beg_date;
 select * from rolling ;
+select batter,Beg_date,SUM(HIT),SUM(ATBAT),ROUND(SUM(HIT)/SUM(ATBAT),3) as AVG from rolling where date_diff between 0 AND 100 and Beg_date > SUBDATE(@Enddate,INTERVAL 100 DAY) group by Beg_date,batter order by batter,Beg_date;
+
 DELETE from rolling;
 
 # select data from batting_avg_wDATEDIFF table that DATEDIFF is 365 days (1 year)
