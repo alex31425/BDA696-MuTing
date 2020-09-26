@@ -24,34 +24,18 @@ select * from batting_avg_wDATEDIFF bawd ;
 DELETE from batting_avg_wDATEDIFF ;
 
 # select data from batting_avg_wDATEDIFF table that DATEDIFF is fewer than 100 days	
-select batter as batter_100 ,SUM(hit),SUM(atbat),SUM(hit)/SUM(atbat) as AVG from batting_avg_wDATEDIFF 
-where diff_day between 0 and 100
-group by batter
-order by AVG desc;
+set @Enddate = '2008-08-31';
+
+drop table if exists rolling;
+CREATE table rolling
+select a.batter ,a.local_date as Beg_date ,b.local_date as End_date, b.hit as HIT,b.atbat as ATBAT, DATEDIFF(b.local_date ,a.local_date) as date_diff
+from batting_avg_wDATEDIFF a inner join batting_avg_wDATEDIFF b on a.batter = b.batter 
+where b.local_date < @Enddate order by a.local_date, DATEDIFF(b.local_date ,a.local_date) ;
 
 
-# create a table to store the above result
-drop table if exists batting_avg_100;
-CREATE table batting_avg_100 (
-batter int unsigned not null,
-hit int unsigned not null,
-atbat int unsigned not null,
-AVG float unsigned
-) engine=InnoDB default charset latin1;
-
-# store data in the batting_avg_100 table
-insert into batting_avg_100 (batter,hit,atbat,AVG)
-select batter ,SUM(hit),SUM(atbat),
-CASE when SUM(hit)<>0
-then round(SUM(hit)/SUM(atbat),3)
-else 0 end as AVG
-from batting_avg_wDATEDIFF 
-where diff_day between 0 and 100
-group by batter
-order by AVG desc;
-
-select * from batting_avg_100 order by batter ;
-DELETE from batting_avg_100 ;
+select batter,Beg_date,SUM(HIT),SUM(ATBAT),ROUND(SUM(HIT)/SUM(ATBAT),3) as AVG from rolling where date_diff between 0 AND 100 group by Beg_date,batter order by batter,Beg_date;
+select * from rolling ;
+DELETE from rolling;
 
 # select data from batting_avg_wDATEDIFF table that DATEDIFF is 365 days (1 year)
 
