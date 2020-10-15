@@ -8,3 +8,7 @@ scikit-learn
 seaborn
 mysqlclient
 sqlalchemy
+sklearn
+statsmodels
+plotly
+openpyxl
