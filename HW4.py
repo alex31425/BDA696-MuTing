@@ -2,12 +2,12 @@ import sys
 
 import numpy as np
 import pandas as pd
+import plotly.graph_objects as go
 import statsmodels.api
 from plotly import express as px
 from sklearn.datasets import load_boston
 from sklearn.ensemble import RandomForestClassifier  # noqa
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import train_test_split
 
 # uncomment for loading these datasets
 # from sklearn.datasets import load_breast_cancer,load_diabetes, load_wine
@@ -192,102 +192,124 @@ def main():
     # Create difference with mean table
 
     # create a temp table df_bin to store raw data
-    df = pd.DataFrame(data.data, columns=data.feature_names)
-    df["target"] = data["target"]
-    count_row = df.shape[0]
-    count_column = df.shape[1]
-
-    predictor_list = []
-    for sublist in X:
-        for item in sublist:
-            predictor_list.append(item)
-    p_min = min(predictor_list)
-    p_max = max(predictor_list)
-    p_range = p_max - p_min
     n_of_bin = 10
-    bin_width = p_range / n_of_bin
 
-    bin_list = [p_min]
-    s = 0
-    while s < p_max:
-        s += bin_width
-        bin_list.append(s)
+    for idx, column in enumerate(X.T):
+        feature_name = data.feature_names[idx]
+        predictor = column
+        target = data["target"]
+        df = pd.DataFrame({feature_name: pd.Series(predictor)})
+        df["target"] = target
+        count_row = df.shape[0]
+        p_min = df[feature_name].min()
+        p_max = df[feature_name].max()
+        p_range = p_max - p_min
+        bin_width = p_range / n_of_bin
+        # to include min number
+        bin_list = [p_min - 1]
+        s = p_min
+        # +1 to include max number
+        while s < p_max + 1:
+            s += bin_width
+            bin_list.append(round(s, 0))
 
-    df_bin = pd.DataFrame({"predictor": pd.Series(predictor_list)})
-    df_bin["LowerBin_UpperBin"] = pd.cut(
-        x=pd.Series(predictor_list), bins=bin_list, include_lowest=True
-    )
-    bincenter = []
-    for bin_n in df_bin["LowerBin_UpperBin"]:
-        bincenter.append(bin_n.mid)
-    df_bincenters = pd.DataFrame({"BinCenters": pd.Series(bincenter)})
-    df_bin["BinCenters"] = df_bincenters
-    df_bin["response"] = pd.Series(np.repeat(y, count_column - 1))
+        df_bin = df
+        df_bin["LowerBin_UpperBin"] = pd.cut(
+            x=df[feature_name],
+            bins=bin_list,
+            include_lowest=True,
+            duplicates="drop",  # noqa
+        )
 
-    # Groupby df_bin table to create a Difference with mean table
+        bincenter = []
+        for bin_n in df_bin["LowerBin_UpperBin"]:
+            bincenter.append(bin_n.mid)
 
-    df_bin_groupby = df_bin.groupby(("LowerBin_UpperBin"), as_index=False).agg(
-        bin_mean=pd.NamedAgg(column="predictor", aggfunc="mean"),
-        bin_count=pd.NamedAgg(column="predictor", aggfunc="count"),
-    )
+            df_bin["BinCenters"] = pd.DataFrame(
+                {"BinCenters": pd.Series(bincenter)}
+            )  # noqa
+            df_bin["response"] = df["target"]
 
-    bin_center_list = []
-    for bin_center in df_bin_groupby["LowerBin_UpperBin"]:
-        bin_center_list.append(bin_center.mid)
+        # Groupby df_bin table to create a Difference with mean table
 
-    df_bin_groupby["BinCenter"] = pd.Series(bin_center_list)
+        df_bin_groupby = df_bin.groupby(
+            ("LowerBin_UpperBin"), as_index=False
+        ).agg(  # noqa
+            bin_mean=pd.NamedAgg(column=feature_name, aggfunc="mean"),
+            bin_count=pd.NamedAgg(column=feature_name, aggfunc="count"),
+        )
 
-    PopulationMean = (np.sum(X) + np.sum(y)) / (count_row * count_column)
-    df_bin["PopulationMean"] = PopulationMean
-    df_bin_groupby["PopulationMean"] = PopulationMean
+        bin_center_list = []
+        for bin_center in df_bin_groupby["LowerBin_UpperBin"]:
+            bin_center_list.append(bin_center.mid)
 
-    MeanSquaredDiff = (
-        df_bin_groupby["bin_mean"] - df_bin_groupby["PopulationMean"]
-    ) ** 2
-    df_bin_groupby["MeanSquaredDiff"] = MeanSquaredDiff
+        df_bin_groupby["BinCenter"] = pd.Series(bin_center_list)
 
-    print(df_bin_groupby)
+        PopulationMean = (np.sum(column)) / (count_row)
+        df_bin["PopulationMean"] = PopulationMean
+        df_bin_groupby["PopulationMean"] = PopulationMean
 
-    # Square the difference, sum them up and divide by number of bins
-    print(
-        f"THE unWeighted NUMBER IS : {df_bin_groupby['MeanSquaredDiff'].sum() / n_of_bin}"  # noqa
-    )
+        MeanSquaredDiff = (
+            df_bin_groupby["bin_mean"] - df_bin_groupby["PopulationMean"]
+        ) ** 2
+        df_bin_groupby["MeanSquaredDiff"] = MeanSquaredDiff
 
-    fig = px.bar(df_bin_groupby, x="BinCenter", y="bin_count")
-    fig.show()
+        # Square the difference, sum them up and divide by number of bins
+        print(
+            f"THE unWeighted NUMBER of {feature_name} IS : {df_bin_groupby['MeanSquaredDiff'].sum() / n_of_bin}"  # noqa
+        )
+        print(feature_name, df_bin_groupby)
 
-    # Difference with mean table (weighted)
-    print("***Difference with mean table (weighted)***")
+        trace1 = go.Bar(
+            x=df_bin_groupby["BinCenter"],
+            y=df_bin_groupby["bin_count"],
+            name="population",
+        )
+        layout = go.Layout(title_text="Binned Response Mean vs Population Mean")  # noqa
 
-    df_bin_groupby_weighted = df_bin_groupby.copy()
+        trace2 = go.Scatter(
+            x=df_bin_groupby["BinCenter"],
+            y=df_bin_groupby["PopulationMean"],
+            name="population mean",
+        )
+        trace3 = go.Scatter(
+            x=df_bin_groupby["BinCenter"],
+            y=df_bin_groupby["bin_mean"],
+            name="Bin Mean",  # noqa
+        )
+        combined = [trace1, trace2, trace3]
+        fig = go.Figure(data=combined, layout=layout)
 
-    population_proportion = []
-    for count in df_bin_groupby["bin_count"]:
-        population_proportion.append(count / len(predictor_list))
+        fig.show()
 
-    df_bin_groupby_weighted["PopulationProportion"] = pd.Series(
-        population_proportion
-    )  # noqa
-    df_bin_groupby_weighted["MeanSquaredDiffWeighted"] = (
-        df_bin_groupby_weighted["MeanSquaredDiff"]
-        * df_bin_groupby_weighted["PopulationProportion"]
-    )
+        # Difference with mean table (weighted)
 
-    # Square the difference, sum them up and divide by number of bins
-    print(
-        f"THE Weighted NUMBER IS :\
-        {df_bin_groupby_weighted['MeanSquaredDiffWeighted'].sum() / n_of_bin}"
-    )
+        print("***Difference with mean table (weighted)***")
 
-    print(df_bin_groupby_weighted)
+        df_bin_groupby_weighted = df_bin_groupby.copy()
 
-    fig = px.bar(df_bin_groupby_weighted, x="BinCenter", y="bin_count")
-    fig.show()
+        population_proportion = []
+        for count in df_bin_groupby["bin_count"]:
+            population_proportion.append(count / count_row)
+
+        df_bin_groupby_weighted["PopulationProportion"] = pd.Series(
+            population_proportion
+        )
+        df_bin_groupby_weighted["MeanSquaredDiffWeighted"] = (
+            df_bin_groupby_weighted["MeanSquaredDiff"]
+            * df_bin_groupby_weighted["PopulationProportion"]
+        )
+
+        # Square the difference, sum them up and divide by number of bins
+        print(
+            f"THE Weighted NUMBER of {feature_name} IS : {df_bin_groupby_weighted['MeanSquaredDiffWeighted'].sum() / n_of_bin}"  # noqa
+        )
+
+        print(feature_name, df_bin_groupby_weighted)
 
     # Random Forest Variable importance ranking
     print("***Random Forest Variable importance ranking***")
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y)
     model = RandomForestRegressor()
     model.fit(X, y)
 
