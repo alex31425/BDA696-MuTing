@@ -17,6 +17,10 @@ from sklearn.ensemble import RandomForestRegressor
 # from sklearn.datasets import load_breast_cancer, load_diabetes
 
 
+def hyperlink(val):
+    return '<a href="{}">{}</a>'.format(val, val)
+
+
 def main():
     # data = load_breast_cancer()
     data = load_boston()
@@ -249,13 +253,6 @@ def main():
         lambda x: x.astype("float")
     )  # noqa
 
-    # print(df_con_d)
-    # print(df_cat_d)
-    # print(df_con_cat_d)
-
-    # df_con_cat_d['Response']=pd.Series(y)
-    # print(df_con_cat_d)
-
     corr_df_con_d = df_con_d.corr(method="pearson")
     print(f"correlation metrics : Continuous / Continuous pairs")
     print(
@@ -263,6 +260,14 @@ def main():
             by=list(corr_df_con_d.columns), ascending=False
         )  # noqa
     )  # noqa
+
+    corr_df_con_d_html = corr_df_con_d.to_html()
+    corr_df_con_d_file = open("corr_df_con_d.html", "w")
+    corr_df_con_d_file.write(corr_df_con_d_html)
+    corr_df_con_html = "corr_df_con_html.html"
+    corr_df_con_d_file.close()
+    corr_plot["corr_df_con_d"] = corr_df_con_html
+    print(corr_plot)
 
     # correlation metrics : Continuous / Categorical pair
     print(f"correlation metrics : Continuous / Categorical pairs")
@@ -327,6 +332,14 @@ def main():
                     by=list(df_cat_d.columns), ascending=False
                 )  # noqa
             )
+
+            corr_df_con_cat_d_html = df_corr_con_cat.to_html()
+            corr_df_con_cat_d_file = open("corr_df_con_cat_d.html", "w")
+            corr_df_con_cat_d_file.write(corr_df_con_cat_d_html)
+            corr_df_con_cat_d = "corr_df_con_cat_d.html"
+            corr_df_con_cat_d_file.close()
+            corr_plot["corr_df_con_cat_d"] = corr_df_con_cat_d
+
             print(f"correlation metrics : Categorical / Categorical pairs")
             trace_con_cat = go.Heatmap(
                 x=df_cat_d.columns, y=con_N, z=df_corr_con_cat, type="heatmap"
@@ -444,6 +457,15 @@ def main():
                     by=list(df_cat_d.columns), ascending=False
                 )  # noqa
             )
+
+            corr_df_cat_d_html = df_corr_cat_cat.to_html()
+            corr_df_cat_d = open("corr_df_cat_d.html", "w")
+            corr_df_cat_d.write(corr_df_cat_d_html)
+            corr_df_cat_html = "corr_df_cat_d.html"
+            corr_df_cat_d.close()
+            corr_plot["corr_df_cat_d"] = corr_df_cat_html
+            print(corr_plot)
+
             trace_cat = go.Heatmap(
                 x=df_cat_d.columns, y=cat_N, z=df_corr_cat_cat, type="heatmap"
             )
@@ -459,6 +481,7 @@ def main():
         print("no cat predictor")
 
     # corrlation plot
+
     trace_con = go.Heatmap(
         x=df_con_d.columns,
         y=df_con_d.columns,
@@ -470,6 +493,23 @@ def main():
     fig_con.write_html(file="plot_con.html", include_plotlyjs="cdn")
     corr_plot["con"] = plot_con
     # fig_con.show()
+
+    # corr link table
+
+    corr_link = []
+    for c in corr_plot.values():
+        script_dir = os.path.dirname(__file__)
+        rel_path = c
+        abs_file_path = os.path.join(script_dir, rel_path)
+        corr_link.append(abs_file_path)
+        df_corrlink = pd.DataFrame(corr_link)
+        df_corrlink.columns = ["corr_link"]
+
+        df_corrlink.style.format(hyperlink)
+
+    # path that will save the ranking excel file
+    path = "D:\PycharmProjects\BDA696-MuTing\corr_link.xlsx"  # noqa
+    df_corrlink.to_excel(path, index=False)
 
     print("***Difference with mean table***")
 
@@ -604,8 +644,6 @@ def main():
             df_link = pd.DataFrame(feature_link)
             df_link.columns = ["feature_link"]
 
-        def hyperlink(val):
-            return '<a href="{}">{}</a>'.format(val, val)
             df_link.style.format(hyperlink)
 
             # Difference with mean table (weighted)
@@ -752,9 +790,46 @@ def main():
     # print(MSD_con)
     # print(MSD_con_cat)
 
+    MSD_cat_html = MSD_cat.to_html()
+    MSD_cat_file = open("MSD_cat.html", "w")
+    MSD_cat_file.write(MSD_cat_html)
+    MSD_cat = "MSD_cat.html"
+    MSD_cat_file.close()
+    BF_plot["MSD_cat"] = MSD_cat
+
+    MSD_con_html = MSD_con.to_html()
+    MSD_con_file = open("MSD_con.html", "w")
+    MSD_con_file.write(MSD_con_html)
+    MSD_con = "MSD_con.html"
+    MSD_con_file.close()
+    BF_plot["MSD_con"] = MSD_con
+
+    MSD_con_cat_html = MSD_con_cat.to_html()
+    MSD_con_cat_file = open("MSD_con_cat.html", "w")
+    MSD_con_cat_file.write(MSD_con_cat_html)
+    MSD_con_cat = "MSD_con_cat.html"
+    MSD_con_cat_file.close()
+    BF_plot["MSD_con_cat"] = MSD_con_cat
+
+    bf_link = []
+    for bf in BF_plot.values():
+        script_dir = os.path.dirname(__file__)
+        rel_path = bf
+        abs_file_path = os.path.join(script_dir, rel_path)
+        bf_link.append(abs_file_path)
+        df_bflink = pd.DataFrame(bf_link)
+        df_bflink.columns = ["bf_link"]
+
+        df_bflink.style.format(hyperlink)
+
+        # path that will save the ranking excel file
+
+    path = "D:\PycharmProjects\BDA696-MuTing\Bf_link.xlsx"  # noqa
+    df_bflink.to_excel(path, index=False)
+
     # Random Forest Variable importance ranking
     print("***Random Forest Variable importance ranking***")
-
+    print(df_bflink)
     model = RandomForestRegressor()
     model.fit(X, y)
 
