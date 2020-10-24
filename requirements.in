@@ -1,1 +1,14 @@
 numpy
+matplotlib
+pandas
+plotly
+pyspark
+pyspark-stubs
+scikit-learn
+seaborn
+mysqlclient
+sqlalchemy
+sklearn
+statsmodels
+plotly
+openpyxl
