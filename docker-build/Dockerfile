@@ -6,16 +6,15 @@ LABEL description="BDA696"
 
 RUN apt-get update && apt install mariadb-client -y
 
-WORKDIR /home/mu-ting/docker-build
+RUN mkdir docker-build
+WORKDIR /docker-build
 
-COPY ./SQLBASH.sh /home/mu-ting/docker-build/SQLBASH.sh
-COPY baseball.sql /home/mu-ting/docker-build/baseball.sql
+COPY ./SQLBASH.sh /docker-build/SQLBASH.sh
+COPY baseball.sql /docker-build/baseball.sql
+COPY sql_commands.sql /docker-build/sql_commands.sql
 
 RUN chmod +x SQLBASH.sh
 
-
-VOLUME ["/home/mu-ting/docker-build","SQLBASH.sh","baseball.sql"]
-
-CMD ["/home/mu-ting/docker-build","baseball.sql","SQLBASH.sh"]
+CMD ["/docker-build/SQLBASH.sh"]
 
 

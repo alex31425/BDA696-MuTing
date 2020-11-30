@@ -1,28 +1,32 @@
 version: '3.3'
 services:
-  sql_service:
+  sql-service:
     build:
       context: .
       dockerfile: Dockerfile 
-    image: sql_service
+    image: sql-service
     restart: unless-stopped
     depends_on: 
      - db
     stdin_open: true
+    volumes:
+      - ./results:/results
     networks:
       - db-network
   db:
-    image: mariadb:10.4
+    image: linuxserver/mariadb:latest
+    container_name: db
     restart : always
-    ports:
-         - "3306:3306"
+#    ports:
+#         - "3306:3306"
     environment:
-         - MYSQL_ROOT_PASSWORD=root
-         - MYSQL_USER=user
-         - MYSQL_PASSWORD=root
-         - MYSQL_DATABASE=baseball
+        - PUID=1000
+        - PGID=1000
+        - MYSQL_ROOT_PASSWORD=root
+        - MYSQL_USER=user
+        - MYSQL_PASSWORD=root
     volumes:
-         - mariadb-data:/var/lib/mysql
+         - ./mariadb-data:/config
     networks: 
       db-network:
         aliases:
@@ -30,9 +34,3 @@ services:
 
 networks: 
   db-network:
-    
-
-volumes:
-  mariadb-data:
- 
-

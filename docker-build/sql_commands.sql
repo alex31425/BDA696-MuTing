@@ -25,6 +25,3 @@ insert into rolling SELECT
    JOIN
    batting_avg_wDATEDIFF b ON a.batter = b.batter
    where DATEDIFF(a.local_date,b.local_date) between 0 and 100 and a.game_id= 12560;
-
-select batter,sum(HIT)/sum(ATBAT) as AVG from rolling group by batter order by batter, sum(HIT)/sum(ATBAT);
-
